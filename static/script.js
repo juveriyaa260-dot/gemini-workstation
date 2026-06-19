@@ -36,6 +36,11 @@ const manualCanvasBtn = document.getElementById("manual-canvas-btn");
 const toggleMonospaceBtn = document.getElementById("toggle-monospace-btn");
 const themeProfileSelector = document.getElementById("theme-profile-selector");
 
+// SIDEBAR TOGGLE DOM ELEMENT REFERENCES
+const sidebar = document.querySelector(".sidebar");
+const closeSidebarBtn = document.getElementById("close-sidebar-btn");
+const openSidebarBtn = document.getElementById("open-sidebar-btn");
+
 let chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
 let activeChatId = null; 
 
@@ -815,3 +820,14 @@ window.triggerYoutubeWorkflow = function(type) {
     // Auto-dispatch stream thread sequence conversion
     handleFormSubmissionTrigger();
 };
+
+// --- SIDEBAR COLLAPSE TOGGLE ENGINE ---
+if (closeSidebarBtn && openSidebarBtn && sidebar) {
+    closeSidebarBtn.addEventListener("click", () => {
+        sidebar.classList.add("collapsed");
+    });
+
+    openSidebarBtn.addEventListener("click", () => {
+        sidebar.classList.remove("collapsed");
+    });
+}
