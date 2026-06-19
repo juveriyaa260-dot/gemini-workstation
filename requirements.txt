@@ -6,3 +6,4 @@ google-genai
 Pillow
 beautifulsoup4
 youtube-transcript-api
+gunicorn
