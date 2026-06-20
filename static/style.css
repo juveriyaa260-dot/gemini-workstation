@@ -17,7 +17,7 @@
 }
 
 body {
-    background: #060606; /* Slightly deeper black to emphasize the glass layers */
+    background: #060606; 
     color: #ececec;
     display: flex;
     height: 100vh;
@@ -36,22 +36,21 @@ body {
     justify-content: space-between;
     border-right: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
-    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s ease, border-color 0.25s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s ease, border-color 0.25s ease;
     z-index: 20;
+    overflow-x: hidden;
 }
 
-/* Sidebar collapsed state (desktop default behavior) */
 .sidebar.collapsed {
     width: 0px;
-    padding-left: 0px;
-    padding-right: 0px;
-    overflow: hidden;
-    border-right: 1px solid transparent;
+    padding: 12px 0px;
+    border-right-color: transparent;
 }
 
 .sidebar-top {
     display: flex;
     flex-direction: column;
+    width: 236px; /* Anchor child width so items don't jitter during collapse */
 }
 
 .sidebar-header {
@@ -219,11 +218,7 @@ body {
     cursor: pointer;
     color: #b4b4b4;
     transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.profile-section:hover {
-    background: var(--glass-bg-hover);
-    border-color: var(--glass-border);
+    width: 236px;
 }
 
 .profile-left {
@@ -317,7 +312,7 @@ body {
 .sidebar-toggle-btn {
     color: #b4b4b4;
     cursor: pointer;
-    display: block; /* Enabled by default to handle collapsed interactions */
+    display: none; /* Controlled inline via js based on layout collapse state */
     font-size: 22px;
 }
 
@@ -376,6 +371,18 @@ body {
 
 .content-container.chatting-mode {
     justify-content: flex-end; 
+}
+
+.welcome {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.welcome h1 {
+    font-size: 24px;
+    font-weight: 500;
+    color: #fff;
+    letter-spacing: -0.3px;
 }
 
 #messages {
@@ -561,7 +568,7 @@ body {
     user-select: none;
 }
 
-/* --- INPUT GLASS CONTAINER --- */
+/* --- BOTTOM INPUT CONTAINER --- */
 .bottom-container {
     width: 100%;
     display: flex;
@@ -916,7 +923,7 @@ body {
     line-height: 1.4;
 }
 
-/* --- CLAUDE ARTIFACT DRAWER PANELS --- */
+/* --- CANVAS ARTIFACT DRAWER PANELS --- */
 .artifact-preview-panel {
     width: 0px;
     background: #000000;
@@ -1217,7 +1224,7 @@ body {
     font-size: 14px;
 }
 
-/* --- APP MODAL AND CODE COMPILATION SHUTTLES --- */
+/* --- MONOSPACE INPUT MODES --- */
 #prompt.monospace-editor-active {
     font-family: 'Courier New', Courier, monospace !important;
     font-size: 14px !important;
@@ -1245,58 +1252,4 @@ body {
 #manual-canvas-btn:hover {
     border-color: var(--accent-color);
     background: rgba(16, 185, 129, 0.05);
-}
-
-/* Base Variable Fallbacks Suite */
-:root {
-    --glass-bg: rgba(255, 255, 255, 0.03);
-    --glass-bg-hover: rgba(255, 255, 255, 0.07);
-    --glass-border: rgba(255, 255, 255, 0.08);
-    --glass-blur: blur(16px);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-}
-
-
-/* --- MOBILE LAYOUT OVERRIDES & RESPONSIVE RULES --- */
-@media (max-width: 768px) {
-    .sidebar {
-        position: fixed;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        height: 100vh;
-        width: 260px;
-        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 99; /* Pop above main content views */
-    }
-    
-    /* Convert width compression into a clean translate shift for mobile slider menus */
-    .sidebar.collapsed {
-        width: 260px !important;
-        padding: 12px !important;
-        transform: translateX(-100%);
-        border-right: none;
-    }
-
-    .sidebar-toggle-btn {
-        display: block !important;
-    }
-
-    .content-container {
-        padding-left: 16px;
-        padding-right: 16px;
-    }
-
-    .modal-content {
-        width: 92%;
-        max-height: 85vh;
-        margin: 10px;
-        padding: 18px;
-    }
-    
-    .setting-row:not([style*="flex-direction: column"]) {
-        flex-direction: column !important;
-        align-items: flex-start !important;
-        gap: 10px;
-    }
 }
