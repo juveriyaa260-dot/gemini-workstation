@@ -9,6 +9,11 @@ const historyBox = document.getElementById("sidebar-history-box");
 const recentsToggle = document.getElementById("recents-toggle");
 const searchInput = document.getElementById("sidebar-search");
 
+// Sidebar Toggle Elements
+const sidebar = document.querySelector(".sidebar");
+const openSidebarBtn = document.getElementById("open-sidebar-btn");
+const closeSidebarBtn = document.getElementById("close-sidebar-btn");
+
 const addIcon = document.querySelector(".add-icon");
 const hiddenFileInput = document.getElementById("hidden-file-input");
 const dropzoneOverlay = document.getElementById("dropzone-overlay");
@@ -18,11 +23,6 @@ const settingsModal = document.getElementById("settings-modal");
 const closeModalBtn = document.getElementById("close-modal-btn");
 const clearCacheBtn = document.getElementById("clear-cache-btn");
 const exportHistoryBtn = document.getElementById("export-history-btn");
-
-// --- SIDEBAR TOGGLE MECHANISM CONTROLLERS ---
-const closeSidebarBtn = document.getElementById("close-sidebar-btn");
-const openSidebarBtn = document.getElementById("open-sidebar-btn");
-const sidebar = document.querySelector(".sidebar");
 
 // Custom Profile & Preferences DOM Elements
 const userNicknameInput = document.getElementById("user-nickname");
@@ -111,16 +111,18 @@ marked.use({ renderer });
 initializeConsoleAccentTheme();
 initializeThemeProfileEngine();
 
-// --- BIND SIDEBAR TOGGLE EVENTS ---
-if (closeSidebarBtn && sidebar) {
+// --- SIDEBAR TOGGLE HANDLERS ---
+if (closeSidebarBtn) {
     closeSidebarBtn.addEventListener("click", () => {
         sidebar.classList.add("collapsed");
+        if (openSidebarBtn) openSidebarBtn.style.display = "block";
     });
 }
 
-if (openSidebarBtn && sidebar) {
+if (openSidebarBtn) {
     openSidebarBtn.addEventListener("click", () => {
         sidebar.classList.remove("collapsed");
+        openSidebarBtn.style.display = "none";
     });
 }
 
@@ -474,6 +476,78 @@ function renderUserBubble(text) {
     messages.appendChild(userBubble); messages.scrollTop = messages.scrollHeight; 
 }
 
+function generateAIResponse(reply, startTimeMark, trackingSuffix = "", wasSearched = false) {
+    const totalLatencySec = ((performance.now() - startTimeMark) / 1000).toFixed(2);
+    const wordCount = reply.split(" ").length;
+    let metricsString = `Words: ${wordCount} | Latency: ${totalLatencySec}s${trackingSuffix}`;
+
+    saveMessageToActiveChat("ai", reply, metricsString);
+
+    const aiContainer = document.createElement("div");
+    aiContainer.className = "ai-msg-container";
+
+    const markdownWrapper = document.createElement("div");
+    markdownWrapper.className = "response-markdown-body";
+
+    aiContainer.appendChild(markdownWrapper);
+    messages.appendChild(aiContainer);
+
+    function appendSourcesDrawerLayout() {
+        const utilityWrapper = document.createElement("div");
+        utilityWrapper.innerHTML = generateFeedbackActionBar(metricsString);
+        aiContainer.appendChild(utilityWrapper.firstElementChild);
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    const containsCode = reply.includes("```") || reply.includes("<!DOCTYPE") || reply.includes("<html") || reply.includes("<head") || reply.includes("<body") || reply.includes("<style") || reply.includes("<script");
+
+    if (containsCode) {
+        markdownWrapper.innerHTML = marked.parse(reply);
+        Prism.highlightAllUnder(markdownWrapper);
+        appendSourcesDrawerLayout();
+        return;
+    }
+
+    let index = 0;
+    const words = reply.split(" ");
+    let compiledText = "";
+
+    const streamer = setInterval(() => {
+        if (index < words.length) {
+            compiledText += (index === 0 ? "" : " ") + words[index];
+            markdownWrapper.innerHTML = marked.parse(compiledText);
+            index++;
+            messages.scrollTop = messages.scrollHeight;
+        } else {
+            clearInterval(streamer);
+            markdownWrapper.innerHTML = marked.parse(reply);
+            Prism.highlightAllUnder(markdownWrapper);
+            appendSourcesDrawerLayout();
+        }
+    }, 20);
+}
+
+function generateFeedbackActionBar(metrics) {
+    return `
+        <div class="feedback-container">
+            <div class="feedback-actions"><span class="material-symbols-outlined copy-msg-btn" onclick="executeClipboardMessageCopy(this)">content_copy</span><span class="material-symbols-outlined">thumb_up</span><span class="material-symbols-outlined">thumb_down</span></div>
+            <div class="metrics-tag">${metrics || ""}</div>
+        </div>`;
+}
+
+window.executeClipboardMessageCopy = function(element) {
+    const parentContainer = element.closest('.ai-msg-container');
+    const targetText = parentContainer.querySelector('.response-markdown-body').innerText;
+    navigator.clipboard.writeText(targetText).then(() => {
+        element.textContent = "check";
+        element.style.color = "var(--accent-color)";
+        setTimeout(() => {
+            element.textContent = "content_copy";
+            element.style.color = "";
+        }, 1500);
+    });
+};
+
 // --- RENDERING ROUTINES ---
 function renderSidebarHistory() {
     historyBox.innerHTML = "";
@@ -488,6 +562,23 @@ function renderSidebarHistory() {
         navItem.querySelector(".delete-chat-btn").addEventListener("click", (e) => { e.stopPropagation(); deleteChatSession(chat.id); });
         historyBox.appendChild(navItem);
     });
+}
+
+function createNewChatSession(firstMessageText) {
+    const truncatedTitle = firstMessageText.length > 22 ? firstMessageText.substring(0, 22) + "..." : firstMessageText;
+    const newChat = { id: Date.now(), title: truncatedTitle, messages: [] };
+    activeChatId = newChat.id; chatHistory.unshift(newChat); localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+    welcomeSection.style.display = "none";
+    if (document.querySelector(".chips-container")) document.querySelector(".chips-container").style.display = "none";
+    messages.style.display = "flex"; contentPane.classList.add("chatting-mode"); renderSidebarHistory();
+}
+
+function saveMessageToActiveChat(sender, text, metrics) {
+    const currentChat = chatHistory.find(chat => chat.id === activeChatId);
+    if (currentChat) {
+        currentChat.messages.push({ sender: sender, text: text, metrics: metrics || "" });
+        localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+    }
 }
 
 function openChatSession(id) {
@@ -602,86 +693,6 @@ function renderTextChipInTray(fileObj) {
     });
     attachmentsTray.appendChild(chip); updateButtonVisualState();
 }
-
-function generateAIResponse(reply, startTimeMark, trackingSuffix = "", wasSearched = false) {
-    const totalLatencySec = ((performance.now() - startTimeMark) / 1000).toFixed(2);
-    const wordCount = reply.split(" ").length;
-    let metricsString = `Words: ${wordCount} | Latency: ${totalLatencySec}s${trackingSuffix}`;
-
-    saveMessageToActiveChat("ai", reply, metricsString);
-
-    const aiContainer = document.createElement("div");
-    aiContainer.className = "ai-msg-container";
-
-    const markdownWrapper = document.createElement("div");
-    markdownWrapper.className = "response-markdown-body";
-
-    aiContainer.appendChild(markdownWrapper);
-    messages.appendChild(aiContainer);
-
-    function appendSourcesDrawerLayout() {
-        const utilityWrapper = document.createElement("div");
-        utilityWrapper.innerHTML = generateFeedbackActionBar(metricsString);
-        aiContainer.appendChild(utilityWrapper.firstElementChild);
-        messages.scrollTop = messages.scrollHeight;
-    }
-
-    const containsCode = reply.includes("```") || reply.includes("<!DOCTYPE") || reply.includes("<html") || reply.includes("<head") || reply.includes("<body") || reply.includes("<style") || reply.includes("<script");
-
-    if (containsCode) {
-        markdownWrapper.innerHTML = marked.parse(reply);
-        Prism.highlightAllUnder(markdownWrapper);
-        appendSourcesDrawerLayout();
-        return;
-    }
-
-    let index = 0;
-    const words = reply.split(" ");
-    let compiledText = "";
-
-    const streamer = setInterval(() => {
-        if (index < words.length) {
-            compiledText += (index === 0 ? "" : " ") + words[index];
-            markdownWrapper.innerHTML = marked.parse(compiledText);
-            index++;
-            messages.scrollTop = messages.scrollHeight;
-        } else {
-            clearInterval(streamer);
-            markdownWrapper.innerHTML = marked.parse(reply);
-            Prism.highlightAllUnder(markdownWrapper);
-            appendSourcesDrawerLayout();
-        }
-    }, 20);
-}
-
-function generateFeedbackActionBar(metrics) {
-    return `
-        <div class="feedback-container">
-            <div class="feedback-actions"><span class="material-symbols-outlined copy-msg-btn" onclick="executeClipboardMessageCopy(this)">content_copy</span><span class="material-symbols-outlined">thumb_up</span><span class="material-symbols-outlined">thumb_down</span></div>
-            <div class="metrics-tag">${metrics || ""}</div>
-        </div>`;
-}
-
-window.executeClipboardMessageCopy = function(element) {
-    const parentContainer = element.closest('.ai-msg-container');
-    const targetText = parentContainer.querySelector('.response-markdown-body').innerText;
-    navigator.clipboard.writeText(targetText).then(() => {
-        element.textContent = "check";
-        element.style.color = "var(--accent-color)";
-        setTimeout(() => {
-            element.textContent = "content_copy";
-            element.style.color = "";
-        }, 1500);
-    });
-};
-
-saveMessageToActiveChat = function(sender, text, metrics) {
-    const currentChat = chatHistory.find(chat => chat.id === activeChatId);
-    if (currentChat) {
-        currentChat.messages.push({ sender: sender, text: text, metrics: metrics || "" });
-        localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
-    }
-};
 
 searchInput.addEventListener("input", () => {
     const query = searchInput.value.toLowerCase().trim();
