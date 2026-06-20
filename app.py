@@ -5,12 +5,13 @@ import base64
 import time
 import datetime
 import re
+import tempfile
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 from google import genai
 from google.genai import types
-from youtube_transcript_api import YouTubeTranscriptApi
+import yt_dlp
 
 load_dotenv()
 
@@ -55,16 +56,40 @@ def extract_youtube_id(url):
     match = re.search(pattern, url)
     return match.group(1) if match else None
 
-def get_youtube_transcript(video_id):
+def download_youtube_audio_bytes(video_url):
     """
-    Fetches plain text transcripts with multi-language fallback arrays.
+    PRO FEATURE: Downloads the audio track of a YouTube video into a 
+    temporary space, reads raw binary data, and cleans up local storage.
     """
-    try:
-        transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'es', 'fr', 'de'])
-        full_transcript = " ".join([item['text'] for item in transcript_list])
-        return full_transcript
-    except Exception as e:
-        return f"Could not retrieve automatic transcript metadata for video {video_id}. Error details: {str(e)}"
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'm4a',
+            'preferredquality': '128',
+        }],
+        'outtmpl': os.path.join(tempfile.gettempdir(), '%(id)s.%(ext)s'),
+        'quiet': True,
+        'no_warnings': True,
+    }
+    
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(video_url, download=True)
+        filename = ydl.prepare_filename(info)
+        # Handle extension translation applied by the FFmpeg extractor postprocessor
+        audio_path = os.path.splitext(filename)[0] + '.m4a'
+        
+        if os.path.exists(audio_path):
+            with open(audio_path, 'rb') as f:
+                audio_bytes = f.read()
+            # Immediately scrub file footprint from host system disk
+            try:
+                os.remove(audio_path)
+            except OSError:
+                pass
+            return audio_bytes, "audio/m4a"
+            
+    raise FileNotFoundError("Audio extraction subsystem track failure through yt-dlp.")
 
 def transform_to_native_contents(history, text, file_context, images=None, preferences=None):
     current_year = datetime.datetime.now().year
@@ -80,6 +105,11 @@ def transform_to_native_contents(history, text, file_context, images=None, prefe
         "you MUST enclose them inside standard Markdown code fences specifying the programming language tag "
         "(e.g. ```html, ```css, ```javascript, ```python, or ```bash). Do not output loose, unwrapped "
         "markup or code snippets into your text replies as it breaks the frontend parser.\n\n"
+        "AUDIO ANALYSIS RULES:\n"
+        "When processing video/audio files, perform high-fidelity multi-modal understanding. "
+        "Deduce information natively from spoken word patterns, vocal variations, and presentation structure. "
+        "You have structural capabilities to analyze layout pauses, determine structural speakers (Speaker 1, Speaker 2), "
+        "detect emotional inflection, and generate timestamps.\n\n"
         f"[TEMPORAL ANCHOR]: Today's current date is officially {current_date}. The current year is {current_year}. "
         "You have live access to Google Search Grounding tools. If a query refers to real-time events, "
         "breaking news, or parameters beyond your original training threshold, execute a web search instantly."
@@ -154,18 +184,24 @@ def chat():
         if not text and not file_context and not images:
             return jsonify({"success": False, "error": "Empty workspace prompt detected."}), 400
 
-        # --- LIVE YOUTUBE ANALYSER PIPELINE INTERCEPTOR ---
-        detected_video_id = extract_youtube_id(text)
-        if detected_video_id:
-            print(f"[YOUTUBE DETECTOR] Extracting transcript asset for Video ID: {detected_video_id}...")
-            video_transcript = get_youtube_transcript(detected_video_id)
-            
-            # Inject structural transcript text into the file context space
-            file_context += f"\n\n--- AUTO-EXTRACTED YOUTUBE TRANSCRIPT (ID: {detected_video_id}) ---\n{video_transcript}\n\n"
-            
-            # Fallback text instruction configuration if user dropped raw URL link blindly
-            if len(text) <= 45:
-                text = "Please clean up, digest, and summarize the attached video transcript asset comprehensively."
+        # --- LIVE PRO YOUTUBE AUDIO PIPELINE INTERCEPTOR ---
+        youtube_url_match = re.search(r'(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/\S+)', text, re.IGNORECASE)
+        native_audio_part = None
+        
+        if youtube_url_match:
+            target_video_url = youtube_url_match.group(1)
+            print(f"[PRO ANALYZER] Isolating audio payload tracking stream vector for: {target_video_url}")
+            try:
+                raw_audio_stream, mime_type = download_youtube_audio_bytes(target_video_url)
+                # Formulate a native audio injection part token for the payload
+                native_audio_part = types.Part.from_bytes(data=raw_audio_stream, mime_type=mime_type)
+                
+                # Override generic instructions if user pasted purely a bare URL link string
+                if len(text.strip()) <= 45:
+                    text = "Perform an exhaustive analysis on the attached audio track. Highlight explicit structural speaker detection indices, vocal variations, core takeaways, and time chapters."
+            except Exception as yt_err:
+                print(f"💥 Audio compilation extraction failure sequence: {str(yt_err)}")
+                return jsonify({"success": False, "error": f"Audio parsing initialization failure: {str(yt_err)}"}), 500
 
         if not gemini_clients:
             return jsonify({"success": False, "error": "No Gemini API keys configured in .env."}), 500
@@ -228,6 +264,10 @@ def chat():
             history, text, file_context, images, preferences
         )
         
+        # INJECT NATIVE MULTIMODAL AUDIO EXTRACT INTO USER CONTEXT SEGMENT
+        if native_audio_part:
+            contents_payload[-1].parts.append(native_audio_part)
+
         for attempt in range(total_available_clients):
             target_node = gemini_clients[current_client_index % total_available_clients]
             active_client = target_node["client"]
@@ -277,6 +317,5 @@ def chat():
         return jsonify({"success": False, "error": f"Core Array Gateway Error: {str(e)}"}), 500
 
 if __name__ == "__main__":
-    # Use the port assigned by the cloud provider, fallback to 5000 locally
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
