@@ -17,7 +17,7 @@
 }
 
 body {
-    background: #060606; 
+    background: #060606; /* Slightly deeper black to emphasize the glass layers */
     color: #ececec;
     display: flex;
     height: 100vh;
@@ -36,23 +36,13 @@ body {
     justify-content: space-between;
     border-right: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 20;
-    overflow-x: hidden;
-}
-
-/* Collapsed Modifier Classes */
-.sidebar.collapsed {
-    width: 0px;
-    padding-left: 0px;
-    padding-right: 0px;
-    border-right: 1px solid transparent;
 }
 
 .sidebar-top {
     display: flex;
     flex-direction: column;
-    min-width: 236px; /* Prevents text squeezing during layout slide transition */
 }
 
 .sidebar-header {
@@ -220,7 +210,6 @@ body {
     cursor: pointer;
     color: #b4b4b4;
     transition: background 0.15s ease, border-color 0.15s ease;
-    min-width: 236px;
 }
 
 .profile-section:hover {
@@ -319,23 +308,8 @@ body {
 .sidebar-toggle-btn {
     color: #b4b4b4;
     cursor: pointer;
-    display: none; /* Controlled dynamically or visible contextually */
+    display: none;
     font-size: 22px;
-    transition: color 0.15s ease;
-}
-
-/* Display option when sidebar is collapsed */
-.sidebar.collapsed + .chat-pane-column .sidebar-toggle-btn {
-    display: inline-block;
-}
-
-/* Alternatively fallback rule if element isn't an adjacent sibling */
-.sidebar-toggle-btn {
-    display: inline-block !important;
-}
-
-.sidebar-toggle-btn:hover {
-    color: #fff;
 }
 
 .model-selector {
@@ -1107,6 +1081,28 @@ body {
     border-color: var(--accent-color);
 }
 
+.skeleton-msg {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 32px;
+    width: 100%;
+    padding: 0 12px;
+}
+
+.skeleton-line {
+    height: 16px;
+    background: linear-gradient(90deg, #1e1e2f 25%, #3a3b5c 50%, #1e1e2f 75%);
+    background-size: 200% 100%;
+    border-radius: 6px;
+    animation: geminiGlowShimmer 2s infinite linear;
+}
+
+@keyframes geminiGlowShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
 .image-loading-card {
     background-color: #2b2b2b;
     border-radius: 28px;
@@ -1252,4 +1248,13 @@ body {
 #manual-canvas-btn:hover {
     border-color: var(--accent-color);
     background: rgba(16, 185, 129, 0.05);
+}
+
+/* Base Variable Fallbacks Suite */
+:root {
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-bg-hover: rgba(255, 255, 255, 0.07);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-blur: blur(16px);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
