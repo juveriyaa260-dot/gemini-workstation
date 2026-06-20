@@ -12,7 +12,6 @@ from bs4 import BeautifulSoup
 from google import genai
 from google.genai import types
 import yt_dlp
-from flask import send_from_directory
 
 load_dotenv()
 
@@ -165,14 +164,6 @@ def transform_to_native_contents(history, text, file_context, images=None, prefe
 @app.route("/")
 def home():
     return render_template("index.html")
-
-    @app.route("/manifest.json")
-def manifest():
-    return send_from_directory("static", "manifest.json")
-
-@app.route("/sw.js")
-def service_worker():
-    return send_from_directory("static", "sw.js")
 
 @app.route("/quota_status", methods=["GET"])
 def get_quota_status():
