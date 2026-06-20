@@ -1,8 +1,11 @@
 {
   "name": "AI Agent",
   "short_name": "AI Agent",
+  "description": "Personal AI Assistant",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#060606",
   "theme_color": "#10b981",
   "icons": [
