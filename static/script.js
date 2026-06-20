@@ -31,15 +31,10 @@ const closeArtifactBtn = document.getElementById("close-artifact-btn");
 const artifactIframe = document.getElementById("artifact-sandbox-iframe");
 const artifactTitleText = document.getElementById("artifact-title-text");
 
-// NEW UPGRADE BUTTON MAPS
+// UPGRADE BUTTON MAPS
 const manualCanvasBtn = document.getElementById("manual-canvas-btn");
 const toggleMonospaceBtn = document.getElementById("toggle-monospace-btn");
 const themeProfileSelector = document.getElementById("theme-profile-selector");
-
-// SIDEBAR TOGGLE DOM ELEMENT REFERENCES
-const sidebar = document.querySelector(".sidebar");
-const closeSidebarBtn = document.getElementById("close-sidebar-btn");
-const openSidebarBtn = document.getElementById("open-sidebar-btn");
 
 let chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
 let activeChatId = null; 
@@ -53,7 +48,7 @@ let generationIsActive = false;
 marked.setOptions({ breaks: true, gfm: true });
 const renderer = new marked.Renderer();
 
-// REPAIRED PRODUCTION CODE INTERFACE PARSER
+// PRODUCTION CODE INTERFACE PARSER
 renderer.code = function(codePayload, infostring) {
     let actualCode = "";
     let lang = "text";
@@ -127,9 +122,9 @@ manualCanvasBtn.addEventListener("click", () => {
         const headerInfo = structuralLines[0].toLowerCase().replace("```", "").trim();
         if (headerInfo) inferredLang = headerInfo;
         
-        structuralLines.shift(); // Remove language header tag
+        structuralLines.shift(); 
         if (structuralLines[structuralLines.length - 1].trim() === "```") {
-            structuralLines.pop(); // Remove closing marker fence
+            structuralLines.pop(); 
         }
         targetSource = structuralLines.join("\n");
     } else if (textContent.includes("<html") || textContent.includes("<!DOCTYPE") || textContent.includes("<div")) {
@@ -198,7 +193,6 @@ toggleMonospaceBtn.addEventListener("click", () => {
     input.focus();
 });
 
-// Global utility injection logic for Code Block Actions
 window.executeSystemClipboardCopy = function(element, base64Code) {
     const code = decodeURIComponent(escape(atob(base64Code)));
     navigator.clipboard.writeText(code).then(() => {
@@ -209,36 +203,6 @@ window.executeSystemClipboardCopy = function(element, base64Code) {
             element.classList.remove("copy-success-state");
         }, 1500);
     });
-};
-
-window.evaluateCodeSandboxRuntime = function(element, base64Code, lang) {
-    const code = decodeURIComponent(escape(atob(base64Code)));
-    const container = element.closest('.code-container');
-    const terminal = container.querySelector('.sandbox-terminal-output');
-    
-    terminal.style.display = "block";
-    terminal.innerHTML = `<span style="color:#676767;">Compiling execution stack...</span>`;
-    
-    setTimeout(() => {
-        if (lang === 'javascript' || lang === 'js') {
-            try {
-                let logs = [];
-                const originalLog = console.log;
-                console.log = function(...args) { logs.push(args.join(' ')); };
-                
-                new Function(code)();
-                
-                console.log = originalLog;
-                terminal.innerHTML = logs.length > 0 ? logs.join('<br>') : `<span style="color:#b4b4b4;">Script finished executing without errors.</span>`;
-            } catch (err) {
-                terminal.innerHTML = `<span style="color:#f87171;">Runtime Exception: ${err.message}</span>`;
-            }
-        } else if (lang === 'python' || lang === 'py') {
-            terminal.innerHTML = `<span style="color:#f59e0b;">Diagnostics complete: Script formatted correctly. Running requires fully configured native kernel.</span>`;
-        } else {
-            terminal.innerHTML = `<span style="color:#b4b4b4;">Runtime parsing complete for raw ${lang.toUpperCase()} text asset stack.</span>`;
-        }
-    }, 450);
 };
 
 window.triggerArtifactRuntimeRender = function (base64Code, lang) {
@@ -581,6 +545,7 @@ function saveMessageToActiveChat(sender, text, metrics) {
     }
 }
 
+// --- RENDERING ROUTINES ---
 function renderSidebarHistory() {
     historyBox.innerHTML = "";
     chatHistory.forEach((chat) => {
@@ -637,7 +602,6 @@ function startNewChat() {
     renderSidebarHistory();
 }
 
-// --- FILE, IMAGE & VIDEO STAGING ROUTER ENGINE ---
 addIcon.addEventListener("click", () => { hiddenFileInput.click(); });
 hiddenFileInput.addEventListener("change", (e) => { processIncomingFiles(e.target.files); hiddenFileInput.value = ""; });
 window.addEventListener("dragenter", (e) => { e.preventDefault(); dropzoneOverlay.style.display = "flex"; });
@@ -787,47 +751,28 @@ window.toggleSourcesDrawerMatrix = function(element) {
     body.classList.toggle("show");
 };
 
-// --- FEATURE 4: NATIVE YOUTUBE WORKSPACE AUTOMATION PIPELINES ---
-window.triggerYoutubeWorkflow = function(type) {
+// --- FEATURE 4: GENERAL PRODUCTIVITY WORKFLOW ROUTERS ---
+window.triggerWorkflow = function(type) {
     const promptInput = document.getElementById("prompt");
     const existingText = promptInput.value.trim();
     
-    // Regular expression structural evaluation targeting YouTube address vectors
-    const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/\S+/i;
-    const hasLink = ytRegex.test(existingText);
-    
-    if (!hasLink) {
-        alert("Please paste your target YouTube Video URL link into the input terminal text area first!");
-        promptInput.focus();
-        return;
+    let commandInstruction = "";
+    if (type === 'explain') {
+        commandInstruction = "Break down the core concepts from the workspace files or query above into high-fidelity, easy-to-digest terms. Use clear logical analogies where applicable.";
+    } else if (type === 'refactor') {
+        commandInstruction = "Review the architecture of the provided system specifications or source snippets. Optimize patterns, reduce overhead, eliminate anomalies, and write beautifully structured code accompanied by explicit markdown inline-comments.";
+    } else if (type === 'document') {
+        commandInstruction = "Generate comprehensive, production-grade technical documentation detailing the components, APIs, layout elements, and configuration rules from the workspace context files above.";
     }
 
-    let commandSuffix = "";
-    if (type === 'summarize') {
-        commandSuffix = "\n\nAnalyze this video transcript asset. Formulate a comprehensive Executive Summary, break down core key thematic chapters, and extract a clean list of action items/key takeaways.";
-    } else if (type === 'blog') {
-        commandSuffix = "\n\nTransform the provided transcript payload into a high-converting, SEO-optimized technical blog article. Implement deep structural headings, write crisp clear introductions, code blocks if discussed, and a strong final takeaway summary. Clean up verbal stutters.";
-    } else if (type === 'tweets') {
-        commandSuffix = "\n\nParse this timeline file structure and translate it into an engaging 5-part Twitter/X breakdown thread. Use hooks for item #1, keep thoughts highly engaging, implement bullet spacing, and close out with an exploratory question prompt frame.";
+    if (existingText) {
+        promptInput.value = existingText + "\n\n" + commandInstruction;
+    } else {
+        promptInput.value = commandInstruction;
     }
-
-    promptInput.value = existingText + commandSuffix;
     
-    // Scale layout bounds properties dynamically
     promptInput.style.height = "auto";
     promptInput.style.height = promptInput.scrollHeight + "px";
     
-    // Auto-dispatch stream thread sequence conversion
     handleFormSubmissionTrigger();
 };
-
-// --- SIDEBAR COLLAPSE TOGGLE ENGINE ---
-if (closeSidebarBtn && openSidebarBtn && sidebar) {
-    closeSidebarBtn.addEventListener("click", () => {
-        sidebar.classList.add("collapsed");
-    });
-
-    openSidebarBtn.addEventListener("click", () => {
-        sidebar.classList.remove("collapsed");
-    });
-}
