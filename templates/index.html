@@ -7,16 +7,19 @@
     <title>Gemini Workstation Pro</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
 
     <script src="https://js.puter.com/v2/"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+    <link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#10b981">
 </head>
 
 <body>
@@ -58,7 +61,7 @@
                 <div class="avatar">ME</div>
                 <div class="profile-info">
                     <div class="profile-name">My Workspace</div>
-                    <div class="profile-plan">Local Instance</div>
+                    <div class="profile-plan">Pro Instance</div>
                 </div>
             </div>
             <span class="material-symbols-outlined profile-settings-btn">settings</span>
@@ -72,7 +75,7 @@
                     <span id="open-sidebar-btn" class="material-symbols-outlined sidebar-toggle-btn">dock_to_left</span>
                     <div class="model-selector">
                         <span class="material-symbols-outlined" style="color: var(--accent-color);">bolt</span>
-                        <span>Gemini 2.5 Flash</span>
+                        <span>Gemini 2.5 Flash (Pro Audio Mode)</span>
                     </div>
                 </div>
 
@@ -93,9 +96,11 @@
                     <div class="input-area">
                         <div class="input-container">
                             <span class="material-symbols-outlined add-icon">add</span>
-                            <textarea id="prompt" placeholder="Ask anything or paste code to preview..." rows="1" autocomplete="off"></textarea>
+                            <textarea id="prompt" placeholder="Ask anything or paste code to preview..." rows="1"
+                                autocomplete="off"></textarea>
                             <div class="input-actions">
-                                <span id="toggle-monospace-btn" class="material-symbols-outlined mic-icon" title="Toggle Monospace Code Mode">integration_instructions</span>
+                                <span id="toggle-monospace-btn" class="material-symbols-outlined mic-icon"
+                                    title="Toggle Monospace Code Mode">integration_instructions</span>
                                 <span class="material-symbols-outlined mic-icon">mic</span>
                                 <span id="send-btn" class="material-symbols-outlined voice-icon">graphic_eq</span>
                             </div>
@@ -103,14 +108,17 @@
                     </div>
 
                     <div class="chips-container">
-                        <button class="chip" onclick="applyQuickImagePrompt()"><span class="material-symbols-outlined">palette</span> Generate Image</button>
-                        <button class="chip" id="manual-canvas-btn"><span class="material-symbols-outlined">open_in_new</span> Send to Canvas</button>
-                        
-                        <button class="chip" onclick="triggerYoutubeWorkflow('summarize')"><span class="material-symbols-outlined">summarize</span> Summary Digest</button>
-                        <button class="chip" onclick="triggerYoutubeWorkflow('blog')"><span class="material-symbols-outlined">article</span> Article Post</button>
-                        <button class="chip" onclick="triggerYoutubeWorkflow('tweets')"><span class="material-symbols-outlined">conversion_path</span> X Thread</button>
-                        
-                        <button class="chip"><span class="material-symbols-outlined">language</span> Look something up</button>
+                        <button class="chip" onclick="applyQuickImagePrompt()"><span
+                                class="material-symbols-outlined">palette</span> Generate Image</button>
+                        <button class="chip" id="manual-canvas-btn"><span
+                                class="material-symbols-outlined">open_in_new</span> Send to Canvas</button>
+
+                        <button class="chip" onclick="triggerWorkflow('explain')"><span
+                                class="material-symbols-outlined">menu_book</span> Explain Concepts</button>
+                        <button class="chip" onclick="triggerWorkflow('refactor')"><span
+                                class="material-symbols-outlined">code_blocks</span> Clean & Refactor</button>
+                        <button class="chip" onclick="triggerWorkflow('document')"><span
+                                class="material-symbols-outlined">history_edu</span> Write Documentation</button>
                     </div>
 
                     <div class="disclaimer-text">Console Workstation. Powered by Gemini 2.5 Flash Engine.</div>
@@ -121,7 +129,8 @@
         <div id="artifact-drawer" class="artifact-preview-panel">
             <div class="artifact-panel-header">
                 <div class="artifact-meta-title">
-                    <span class="material-symbols-outlined" style="color: var(--accent-color);">integration_instructions</span>
+                    <span class="material-symbols-outlined"
+                        style="color: var(--accent-color);">integration_instructions</span>
                     <span id="artifact-title-text">Live Output Frame Canvas</span>
                 </div>
                 <div class="artifact-window-actions">
@@ -148,7 +157,8 @@
                         <h4>Console Workspace Profile Theme</h4>
                         <p>Switch between custom glassmorphic environment filters layout arrays.</p>
                     </div>
-                    <select id="theme-profile-selector" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: white; padding: 6px 12px; border-radius: 6px; outline: none; font-size: 13px; cursor: pointer;">
+                    <select id="theme-profile-selector"
+                        style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: white; padding: 6px 12px; border-radius: 6px; outline: none; font-size: 13px; cursor: pointer;">
                         <option value="cyber-neon">Cyber Neon Grid</option>
                         <option value="frosted-arctic">Frosted Arctic</option>
                         <option value="obsidian-minimalist">Obsidian Minimalist</option>
@@ -176,7 +186,8 @@
                     <div class="preferences-input-group">
                         <input type="text" id="user-nickname" placeholder="Nickname (What should AI call you?)">
                         <input type="text" id="user-occupation" placeholder="Occupation">
-                        <textarea id="user-about" placeholder="Interests, values, or preferences to keep in mind..." rows="2"></textarea>
+                        <textarea id="user-about" placeholder="Interests, values, or preferences to keep in mind..."
+                            rows="2"></textarea>
                     </div>
                 </div>
 
@@ -185,7 +196,9 @@
                         <h4>Custom Instructions</h4>
                         <p>Provide specific style guidelines, rules, or tone preferences for responses.</p>
                     </div>
-                    <textarea id="custom-instructions" placeholder="e.g., 'Keep answers concise', 'Always format outputs cleanly with plenty of code comments'..." rows="3"></textarea>
+                    <textarea id="custom-instructions"
+                        placeholder="e.g., 'Keep answers concise', 'Always format outputs cleanly with plenty of code comments'..."
+                        rows="3"></textarea>
                 </div>
 
                 <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 14px;">
@@ -193,7 +206,8 @@
                         <h4>Operational Key Allocation Quotas</h4>
                         <p>Live active parameter monitoring across cluster framework arrays.</p>
                     </div>
-                    <div id="quota-bars-container" style="width: 100%; display: flex; flex-direction: column; gap: 12px; margin-top: 4px;"></div>
+                    <div id="quota-bars-container"
+                        style="width: 100%; display: flex; flex-direction: column; gap: 12px; margin-top: 4px;"></div>
                 </div>
 
                 <div class="setting-row">
