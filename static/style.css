@@ -1292,10 +1292,11 @@ body {
         height: 100vh;
         width: 280px; 
         max-width: 85vw;
-        background: rgba(10, 10, 10, 0.92); /* High opacity glass layer for mobile clarity */
+        background: rgba(10, 10, 10, 0.95); /* High opacity glass layer for mobile clarity */
         border-right: 1px solid rgba(255, 255, 255, 0.08);
         transform: translateX(0);
         z-index: 9999; 
+        touch-action: none; /* Prevent standard panning behaviors over menu drawer panels */
     }
 
     /* Collapsed state hidden completely off-screen to the left */
