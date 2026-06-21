@@ -36,7 +36,7 @@ body {
     justify-content: space-between;
     border-right: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
-    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s ease, border-color 0.25s ease;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s ease, border-color 0.25s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 20;
     overflow-x: hidden;
 }
@@ -50,7 +50,7 @@ body {
 .sidebar-top {
     display: flex;
     flex-direction: column;
-    width: 236px; /* Anchor child width so items don't jitter during collapse */
+    width: 236px; 
 }
 
 .sidebar-header {
@@ -312,7 +312,7 @@ body {
 .sidebar-toggle-btn {
     color: #b4b4b4;
     cursor: pointer;
-    display: none; /* Controlled inline via js based on layout collapse state */
+    display: none; 
     font-size: 22px;
 }
 
@@ -420,34 +420,65 @@ body {
 }
 
 .ai-msg-container {
+    max-width: 760px;
     width: 100%;
-    margin-bottom: 32px;
+    margin: 0 auto 20px auto;
     font-size: 15px;
-    line-height: 1.6;
-    color: #ececec; 
-    position: relative;
+    line-height: 1.55;
 }
 
-.skeleton-msg {
+/* --- INTELLIGENT THINKING STATUS COMPONENT --- */
+.thinking-status-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    padding: 10px 16px;
+    border-radius: 16px;
+    margin-bottom: 24px;
+    animation: chipSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    width: fit-content;
+}
+
+.thinking-indicator {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 32px;
-    width: 100%;
-    padding: 0 12px;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
 }
 
-.skeleton-line {
-    height: 14px;
-    background: linear-gradient(90deg, #171717 25%, #222 50%, #171717 75%);
-    background-size: 200% 100%;
-    border-radius: 4px;
-    animation: skeletonShimmer 1.4s infinite linear;
+.thinking-dot {
+    width: 8px;
+    height: 8px;
+    background-color: var(--accent-color);
+    border-radius: 50%;
+    position: relative;
+    animation: thinkingPulse 1.4s infinite ease-in-out;
 }
 
-@keyframes skeletonShimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+@keyframes thinkingPulse {
+    0%, 100% {
+        transform: scale(0.8);
+        opacity: 0.5;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+        box-shadow: 0 0 8px 2px rgba(16, 185, 129, 0.4);
+    }
+}
+
+.thinking-status-text {
+    font-size: 14px;
+    color: #b4b4b4;
+    font-weight: 500;
+    font-family: monospace;
+    letter-spacing: 0.5px;
 }
 
 .msg-file-pill {
@@ -1085,70 +1116,6 @@ body {
     border-color: var(--accent-color);
 }
 
-.skeleton-msg {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 32px;
-    width: 100%;
-    padding: 0 12px;
-}
-
-.skeleton-line {
-    height: 16px;
-    background: linear-gradient(90deg, #1e1e2f 25%, #3a3b5c 50%, #1e1e2f 75%);
-    background-size: 200% 100%;
-    border-radius: 6px;
-    animation: geminiGlowShimmer 2s infinite linear;
-}
-
-@keyframes geminiGlowShimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-}
-
-.image-loading-card {
-    background-color: #2b2b2b;
-    border-radius: 28px;
-    width: 100%;
-    max-width: 440px;
-    aspect-ratio: 1 / 1;
-    padding: 24px;
-    position: relative;
-    overflow: hidden;
-    margin: 16px 0;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
-}
-
-.image-loading-title {
-    color: #e2e2e2;
-    font-size: 15px;
-    font-weight: 450;
-    font-family: system-ui, -apple-system, sans-serif;
-    margin-bottom: 16px;
-    position: relative;
-    z-index: 2;
-}
-
-.image-loading-dots {
-    position: absolute;
-    bottom: -10%;
-    right: -10%;
-    width: 90%;
-    height: 90%;
-    z-index: 1;
-    background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px);
-    background-size: 14px 14px;
-    -webkit-mask-image: radial-gradient(circle at bottom right, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 75%);
-    mask-image: radial-gradient(circle at bottom right, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 75%);
-    animation: imageGridPulse 2s infinite ease-in-out;
-}
-
-@keyframes imageGridPulse {
-    0%, 100% { opacity: 0.7; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.02); }
-}
-
 .sources-collapse-wrapper {
     margin-top: 10px;
     border: 1px solid var(--glass-border);
@@ -1252,4 +1219,129 @@ body {
 #manual-canvas-btn:hover {
     border-color: var(--accent-color);
     background: rgba(16, 185, 129, 0.05);
+}
+
+.response-markdown-body {
+    max-width: 760px;
+    margin: 0 auto;
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+.response-markdown-body p {
+    margin-bottom: 14px;
+}
+
+.response-markdown-body h1,
+.response-markdown-body h2,
+.response-markdown-body h3 {
+    margin-top: 22px;
+    margin-bottom: 10px;
+}
+
+.response-markdown-body ul,
+.response-markdown-body ol {
+    padding-left: 24px;
+}
+
+/* --- HIGH FIDELITY DIRECT VIDEO ANALYSIS ADDITIONS --- */
+.video-preview-chip {
+    padding: 4px 12px 4px 6px !important;
+}
+
+.video-timestamp-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    color: var(--accent-color);
+    padding: 2px 8px;
+    margin: 0 4px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+
+.video-timestamp-pill:hover {
+    background: var(--accent-color);
+    color: #000000 !important;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+/* --- HIGH FIDELITY MOBILE RESPONSIVENESS & DRAWER TRANSITIONS --- */
+@media (max-width: 768px) {
+    body {
+        position: relative;
+    }
+
+    /* Expose the toggle controls on mobile */
+    .sidebar-toggle-btn {
+        display: block !important;
+    }
+
+    /* Transform Sidebar into an Overlay Drawer */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 280px; 
+        max-width: 85vw;
+        background: rgba(10, 10, 10, 0.92); /* High opacity glass layer for mobile clarity */
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+        transform: translateX(0);
+        z-index: 9999; 
+    }
+
+    /* Collapsed state hidden completely off-screen to the left */
+    .sidebar.collapsed {
+        width: 280px !important; 
+        padding: 12px !important;
+        transform: translateX(-100%);
+        border-right-color: transparent;
+    }
+
+    /* Static child configuration wrapper updates for mobile viewport */
+    .sidebar-top, .profile-section {
+        width: 100% !important;
+    }
+
+    /* Dark dimming background layer when drawer is pulled out */
+    .mobile-sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 9998;
+        display: none;
+        opacity: 0;
+        transition: opacity 0.25s ease;
+    }
+
+    .mobile-sidebar-overlay.active {
+        display: block;
+        opacity: 1;
+    }
+
+    /* Restructure layout pane grids to use full screen width */
+    .chat-pane-column {
+        width: 100%;
+    }
+    
+    .artifact-preview-panel.open-active {
+        width: 100%;
+        position: fixed;
+        top: 0;
+        right: 0;
+        z-index: 10000;
+    }
 }
