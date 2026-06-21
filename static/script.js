@@ -46,7 +46,7 @@ let activeChatId = null;
 
 // SEPARATED PARSED BUFFERS FOR SYSTEM STAGING
 let stagedFilesList = [];  // { name: string, text: string }
-let stagedImagesList = []; // { name: string, type: string, base64: string }
+let stagedImagesList = []; // { name: string, type: string, base64: string, url: string }
 
 let generationIsActive = false;
 
@@ -111,20 +111,81 @@ marked.use({ renderer });
 initializeConsoleAccentTheme();
 initializeThemeProfileEngine();
 
-// --- SIDEBAR TOGGLE HANDLERS ---
-if (closeSidebarBtn) {
-    closeSidebarBtn.addEventListener("click", () => {
-        sidebar.classList.add("collapsed");
-        if (openSidebarBtn) openSidebarBtn.style.display = "block";
-    });
+
+// --- MOBILE OVERLAY & GESTURE SYSTEM INTEGRATION ---
+
+// Dynamically generate the dimming panel layer if not in DOM array
+let mobileOverlay = document.querySelector(".mobile-sidebar-overlay");
+if (!mobileOverlay) {
+    mobileOverlay = document.createElement("div");
+    mobileOverlay.className = "mobile-sidebar-overlay";
+    document.body.appendChild(mobileOverlay);
 }
 
-if (openSidebarBtn) {
-    openSidebarBtn.addEventListener("click", () => {
-        sidebar.classList.remove("collapsed");
-        openSidebarBtn.style.display = "none";
-    });
+// Ensure layout initial states match mobile profiles cleanly on load rules
+if (window.innerWidth <= 768) {
+    sidebar.classList.add("collapsed");
 }
+
+function openMobileSidebar() {
+    sidebar.classList.remove("collapsed");
+    mobileOverlay.classList.add("active");
+    if (openSidebarBtn) openSidebarBtn.style.display = "none";
+}
+
+function closeMobileSidebar() {
+    sidebar.classList.add("collapsed");
+    mobileOverlay.classList.remove("active");
+    if (openSidebarBtn) openSidebarBtn.style.display = "block";
+}
+
+if (closeSidebarBtn) {
+    closeSidebarBtn.addEventListener("click", closeMobileSidebar);
+}
+if (openSidebarBtn) {
+    openSidebarBtn.addEventListener("click", openMobileSidebar);
+}
+mobileOverlay.addEventListener("click", closeMobileSidebar);
+
+// High-Fidelity Multi-Swipe Tracking Interfaces
+let touchStartX = 0;
+let touchStartY = 0;
+let touchEndX = 0;
+let touchEndY = 0;
+
+window.addEventListener("touchstart", (e) => {
+    touchStartX = e.changedTouches[0].clientX;
+    touchStartY = e.changedTouches[0].clientY;
+}, { passive: true });
+
+window.addEventListener("touchend", (e) => {
+    touchEndX = e.changedTouches[0].clientX;
+    touchEndY = e.changedTouches[0].clientY;
+    handleSwipeGestures();
+}, { passive: true });
+
+function handleSwipeGestures() {
+    const swipeDistanceX = touchEndX - touchStartX;
+    const swipeDistanceY = touchEndY - touchStartY;
+    
+    // Verify movement is clean horizontal shift rather than a vertical scrolling track
+    if (Math.abs(swipeDistanceX) > Math.abs(swipeDistanceY)) {
+        const minSwipeThreshold = 50; // trigger displacement line filter
+        
+        if (sidebar.classList.contains("collapsed")) {
+            // OPEN SIDEBAR: Swipe Left-to-Right starting near the left boundary edge
+            if (swipeDistanceX > minSwipeThreshold && touchStartX < 60) {
+                openMobileSidebar();
+            }
+        } else {
+            // CLOSE SIDEBAR: Swipe Right-to-Left originating from anywhere within view
+            if (swipeDistanceX < -minSwipeThreshold) {
+                closeMobileSidebar();
+            }
+        }
+    }
+}
+
 
 // --- FEATURE 1: MANUAL SEND TO CANVAS CONTROLLER ---
 manualCanvasBtn.addEventListener("click", () => {
@@ -231,7 +292,11 @@ window.triggerArtifactRuntimeRender = function (base64Code, lang) {
     artifactDrawer.classList.add("open-active");
     artifactTitleText.textContent = `Live Canvas Preview (${lang.toUpperCase()})`;
 
-    const iframeDoc = artifactIframe.contentDocument || artifactIframe.contentWindow.document;
+    const wrapper = document.querySelector(".artifact-frame-body-wrapper");
+    wrapper.innerHTML = `<iframe id="artifact-sandbox-iframe" sandbox="allow-scripts allow-same-origin" style="width: 100%; height: 100%; border: none; background: #ffffff;"></iframe>`;
+    
+    const dynamicIframe = document.getElementById("artifact-sandbox-iframe");
+    const iframeDoc = dynamicIframe.contentDocument || dynamicIframe.contentWindow.document;
     iframeDoc.open();
 
     if (lang === "html" || lang === "htm") {
@@ -316,14 +381,16 @@ sendBtn.addEventListener("click", handleFormSubmissionTrigger);
 function handleFormSubmissionTrigger() {
     if (generationIsActive) {
         generationIsActive = false; updateButtonVisualState();
-        const activeCard = document.querySelector(".image-loading-card-wrapper");
-        const activeSkeleton = document.querySelector(".skeleton-msg");
-        if (activeCard) activeCard.remove();
-        if (activeSkeleton) activeSkeleton.remove();
+        const activeThinking = document.querySelector(".thinking-status-card");
+        if (activeThinking) activeThinking.remove();
     } else {
         sendMessage();
     }
 }
+
+window.onbeforeunload = function() {
+    if (generationIsActive) return "Generation is currently running. Are you sure you want to exit?";
+};
 
 window.addEventListener("keydown", (e) => {
     if (e.ctrlKey && e.key.toLowerCase() === 'n') { e.preventDefault(); startNewChat(); }
@@ -357,6 +424,23 @@ recentsToggle.addEventListener("click", () => {
 
 document.querySelector(".new-chat").addEventListener("click", startNewChat);
 
+window.seekActiveSandboxVideo = function(seconds) {
+    let videoNode = document.getElementById("workspace-native-player");
+    
+    if (!videoNode) {
+        const currentIframe = document.getElementById("artifact-sandbox-iframe");
+        if (currentIframe) {
+            const iframeDoc = currentIframe.contentDocument || currentIframe.contentWindow.document;
+            videoNode = iframeDoc.querySelector("video");
+        }
+    }
+    
+    if (videoNode) {
+        videoNode.currentTime = seconds;
+        videoNode.play();
+    }
+};
+
 function sendMessage(){
     const text = input.value.trim();
     
@@ -366,14 +450,18 @@ function sendMessage(){
 
     let messageHtmlContent = "";
     let aggregatedFileContext = "";
+    let trackingContainsVideo = false;
 
     if (stagedImagesList.length > 0) {
         stagedImagesList.forEach(img => {
             if (img.type.startsWith("video/")) {
+                trackingContainsVideo = true;
                 messageHtmlContent += `
-                    <div class="msg-file-pill visual-vid-preview" style="position:relative; max-width:240px; padding:8px;">
-                        <span class="material-symbols-outlined" style="color: var(--accent-color);">movie</span>
-                        <div style="font-size:12px; color:#fff; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${img.name} (Video Attached)</div>
+                    <div class="msg-file-pill visual-vid-preview" style="position:relative; max-width:280px; padding:6px; background: rgba(0,0,0,0.2);">
+                        <div class="micro-video-wrapper" style="width:40px; height:26px; border-radius:4px; overflow:hidden; background:#000;">
+                            <video src="${img.url}" muted style="width:100%; height:100%; object-fit:cover;"></video>
+                        </div>
+                        <div style="font-size:12px; color:#fff; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; flex:1; margin-left:8px;">${img.name} (MP4 Attached)</div>
                     </div>`;
             } else {
                 messageHtmlContent += `
@@ -401,6 +489,20 @@ function sendMessage(){
     const activeHistoryPayload = activeChatSession ? activeChatSession.messages.slice(0, -1) : [];
     const imagesPayloadSnapshot = [...stagedImagesList];
 
+    if (trackingContainsVideo && imagesPayloadSnapshot[0]?.url) {
+        artifactDrawer.classList.add("open-active");
+        artifactTitleText.textContent = `Video Operational Player Matrix`;
+        
+        const wrapper = document.querySelector(".artifact-frame-body-wrapper");
+        if (wrapper) {
+            wrapper.innerHTML = `
+                <div style="background:#090909; display:flex; justify-content:center; align-items:center; width:100%; height:100%; overflow:hidden;">
+                    <video id="workspace-native-player" src="${imagesPayloadSnapshot[0].url}" controls style="max-width:95%; max-height:90vh; border-radius:12px; border: 1px solid rgba(255,255,255,0.15); box-shadow:0 20px 50px rgba(0,0,0,0.8);"></video>
+                </div>
+            `;
+        }
+    }
+
     input.value = ""; input.style.height = "auto";
     generationIsActive = true; updateButtonVisualState();
     
@@ -409,21 +511,37 @@ function sendMessage(){
 
     const startTimeMark = performance.now();
     
-    const skeletonElement = document.createElement("div");
-    if (text.toLowerCase().startsWith("/image ")) {
-        skeletonElement.className = "image-loading-card-wrapper"; 
-        skeletonElement.innerHTML = `
-            <div class="image-loading-card">
-                <div class="image-loading-title">Creating image</div>
-                <div class="image-loading-dots"></div>
-            </div>`;
+    const thinkingStatusElement = document.createElement("div");
+    thinkingStatusElement.className = "thinking-status-card";
+    
+    let currentStatusIndex = 0;
+    let statusSequence = ["Thinking..."];
+    
+    if (trackingContainsVideo) {
+        statusSequence = ["Reading video container...", "Decoding MP4 frame matrices...", "Analyzing temporal contexts...", "Generating description..."];
+    } else if (imagesPayloadSnapshot.length > 0) {
+        statusSequence = ["Analyzing image...", "Thinking...", "Generating answer..."];
     } else {
-        skeletonElement.className = "skeleton-msg";
-        skeletonElement.innerHTML = `<div class="skeleton-line" style="width: 85%;"></div><div class="skeleton-line" style="width: 60%;"></div>`;
+        statusSequence = ["Thinking...", "Searching web sources...", "Generating answer..."];
     }
     
-    messages.appendChild(skeletonElement);
+    thinkingStatusElement.innerHTML = `
+        <div class="thinking-indicator">
+            <span class="thinking-dot"></span>
+        </div>
+        <span class="thinking-status-text">${statusSequence[0]}</span>
+    `;
+    
+    messages.appendChild(thinkingStatusElement);
     messages.scrollTop = messages.scrollHeight;
+
+    let statusInterval = setInterval(() => {
+        if (currentStatusIndex < statusSequence.length - 1) {
+            currentStatusIndex++;
+            const textNode = thinkingStatusElement.querySelector(".thinking-status-text");
+            if (textNode) textNode.textContent = statusSequence[currentStatusIndex];
+        }
+    }, 1250);
 
     fetch("/chat", {
         method: "POST",
@@ -452,19 +570,29 @@ function sendMessage(){
         return data;
     })
     .then(data => {
+        if (statusInterval) clearInterval(statusInterval);
         if (!generationIsActive) return;
-        skeletonElement.remove();
+        thinkingStatusElement.remove();
         generationIsActive = false; updateButtonVisualState();
         if (data.success) {
             let traceTag = data.was_searched ? ` | 🌐 Grounded` : ``;
-            generateAIResponse(data.reply, startTimeMark, traceTag, data.was_searched);
+            
+            let finalProcessedReply = data.reply;
+            const timestampRegex = /\[(\d{2}):(\d{2})\]/g;
+            finalProcessedReply = finalProcessedReply.replace(timestampRegex, (match, mins, secs) => {
+                const totalSecs = parseInt(mins, 10) * 60 + parseInt(secs, 10);
+                return `<span class="video-timestamp-pill" onclick="window.seekActiveSandboxVideo(${totalSecs})"><span class="material-symbols-outlined" style="font-size:12px;">play_arrow</span>${mins}:${secs}</span>`;
+            });
+
+            generateAIResponse(finalProcessedReply, startTimeMark, traceTag, data.was_searched, false);
         } else {
             generateAIResponse(`⚠️ Core Processing Error: ${data.error}`, startTimeMark);
         }
     })
     .catch(err => {
+        if (statusInterval) clearInterval(statusInterval);
         if (!generationIsActive) return;
-        skeletonElement.remove();
+        thinkingStatusElement.remove();
         generationIsActive = false; updateButtonVisualState();
         generateAIResponse(`❌ System Connectivity Failure: ${err.message}`, startTimeMark);
     });
@@ -476,7 +604,7 @@ function renderUserBubble(text) {
     messages.appendChild(userBubble); messages.scrollTop = messages.scrollHeight; 
 }
 
-function generateAIResponse(reply, startTimeMark, trackingSuffix = "", wasSearched = false) {
+function generateAIResponse(reply, startTimeMark, trackingSuffix = "", wasSearched = false, isImageCreation = false) {
     const totalLatencySec = ((performance.now() - startTimeMark) / 1000).toFixed(2);
     const wordCount = reply.split(" ").length;
     let metricsString = `Words: ${wordCount} | Latency: ${totalLatencySec}s${trackingSuffix}`;
@@ -501,8 +629,8 @@ function generateAIResponse(reply, startTimeMark, trackingSuffix = "", wasSearch
 
     const containsCode = reply.includes("```") || reply.includes("<!DOCTYPE") || reply.includes("<html") || reply.includes("<head") || reply.includes("<body") || reply.includes("<style") || reply.includes("<script");
 
-    if (containsCode) {
-        markdownWrapper.innerHTML = marked.parse(reply);
+    if (containsCode || reply.includes("video-timestamp-pill")) {
+        markdownWrapper.innerHTML = reply.startsWith("<p>") ? reply : marked.parse(reply);
         Prism.highlightAllUnder(markdownWrapper);
         appendSourcesDrawerLayout();
         return;
@@ -548,7 +676,6 @@ window.executeClipboardMessageCopy = function(element) {
     });
 };
 
-// --- RENDERING ROUTINES ---
 function renderSidebarHistory() {
     historyBox.innerHTML = "";
     chatHistory.forEach((chat) => {
@@ -596,7 +723,7 @@ function openChatSession(id) {
             bubble.className = "ai-msg-container";
             const markdownWrapper = document.createElement("div");
             markdownWrapper.className = "response-markdown-body";
-            markdownWrapper.innerHTML = marked.parse(msg.text);
+            markdownWrapper.innerHTML = msg.text.startsWith("<span") || msg.text.includes("video-timestamp-pill") ? msg.text : marked.parse(msg.text);
             bubble.appendChild(markdownWrapper); bubble.innerHTML += generateFeedbackActionBar(msg.metrics);
             setTimeout(() => Prism.highlightAllUnder(markdownWrapper), 50);
         }
@@ -639,12 +766,17 @@ function processIncomingFiles(files) {
         const reader = new FileReader();
         
         reader.onload = function(evt) {
+            const base64Data = evt.target.result.split(",")[1];
             if (isImg || isVid) {
-                const base64Data = evt.target.result.split(",")[1];
-                const mediaObj = { name: file.name, type: file.type, base64: base64Data };
+                const videoUrl = isVid ? URL.createObjectURL(file) : null;
+                const mediaObj = { name: file.name, type: file.type, base64: base64Data, url: videoUrl };
                 if (!stagedImagesList.some(i => i.name === file.name)) {
                     stagedImagesList.push(mediaObj);
-                    renderVisualChipInTray(mediaObj, isVid ? null : evt.target.result);
+                    if (isVid) {
+                        renderVideoChipInTray(mediaObj);
+                    } else {
+                        renderVisualChipInTray(mediaObj, evt.target.result);
+                    }
                 }
             } else {
                 const fileObj = { name: file.name, text: evt.target.result };
@@ -663,17 +795,37 @@ function processIncomingFiles(files) {
     }
 }
 
+function renderVideoChipInTray(mediaObj) {
+    const chip = document.createElement("div"); 
+    chip.className = "file-preview-chip video-preview-chip";
+    chip.style.borderColor = "var(--accent-color)";
+    
+    chip.innerHTML = `
+        <div class="micro-video-wrapper" style="width:24px; height:18px; border-radius:3px; overflow:hidden; background:#000;">
+            <video src="${mediaObj.url}" muted style="width:100%; height:100%; object-fit:cover;"></video>
+        </div>
+        <span class="file-name-text" style="margin-left:6px;">${mediaObj.name}</span>
+        <span class="material-symbols-outlined remove-file-btn">close</span>`;
+        
+    chip.querySelector(".remove-file-btn").addEventListener("click", () => { 
+        stagedImagesList = stagedImagesList.filter(i => i.name !== mediaObj.name); 
+        chip.remove(); updateButtonVisualState(); 
+    });
+    
+    const videoNode = chip.querySelector("video");
+    chip.addEventListener("mouseenter", () => videoNode.play());
+    chip.addEventListener("mouseleave", () => { videoNode.pause(); videoNode.currentTime = 0; });
+
+    attachmentsTray.appendChild(chip); updateButtonVisualState();
+}
+
 function renderVisualChipInTray(mediaObj, dataUrl) {
     const chip = document.createElement("div"); 
     chip.className = "file-preview-chip";
     chip.style.borderColor = "var(--accent-color)";
     
-    const mediaPreview = dataUrl 
-        ? `<img src="${dataUrl}" style="width:20px; height:20px; object-fit:cover; border-radius:4px;" />`
-        : `<span class="material-symbols-outlined file-icon" style="color: var(--accent-color); font-size: 18px;">movie</span>`;
-
     chip.innerHTML = `
-        ${mediaPreview}
+        <img src="${dataUrl}" style="width:20px; height:20px; object-fit:cover; border-radius:4px;" />
         <span class="file-name-text">${mediaObj.name}</span>
         <span class="material-symbols-outlined remove-file-btn">close</span>`;
     chip.querySelector(".remove-file-btn").addEventListener("click", () => { 
@@ -720,15 +872,6 @@ function initializeConsoleAccentTheme() {
         });
     });
 }
-
-window.applyQuickImagePrompt = function() {
-    const promptInput = document.getElementById("prompt");
-    promptInput.value = "/image a futuristic neon metropolis cyber workstation, cinematic lighting, 8k resolution";
-    promptInput.style.height = "auto";
-    promptInput.style.height = promptInput.scrollHeight + "px";
-    promptInput.focus();
-    updateButtonVisualState();
-};
 
 function updateGatewayQuotaMeters() {
     const container = document.getElementById("quota-bars-container");
