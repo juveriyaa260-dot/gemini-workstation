@@ -112,9 +112,8 @@ initializeConsoleAccentTheme();
 initializeThemeProfileEngine();
 
 
-// --- MOBILE OVERLAY & GESTURE SYSTEM INTEGRATION ---
+// --- GLOBAL MOBILE OVERLAY & WHOLE-SCREEN SWIPE MODULE ---
 
-// Dynamically generate the dimming panel layer if not in DOM array
 let mobileOverlay = document.querySelector(".mobile-sidebar-overlay");
 if (!mobileOverlay) {
     mobileOverlay = document.createElement("div");
@@ -122,7 +121,6 @@ if (!mobileOverlay) {
     document.body.appendChild(mobileOverlay);
 }
 
-// Ensure layout initial states match mobile profiles cleanly on load rules
 if (window.innerWidth <= 768) {
     sidebar.classList.add("collapsed");
 }
@@ -147,7 +145,7 @@ if (openSidebarBtn) {
 }
 mobileOverlay.addEventListener("click", closeMobileSidebar);
 
-// High-Fidelity Multi-Swipe Tracking Interfaces
+// Whole Screen Dynamic Gestures Config Tracking Vectors
 let touchStartX = 0;
 let touchStartY = 0;
 let touchEndX = 0;
@@ -161,24 +159,24 @@ window.addEventListener("touchstart", (e) => {
 window.addEventListener("touchend", (e) => {
     touchEndX = e.changedTouches[0].clientX;
     touchEndY = e.changedTouches[0].clientY;
-    handleSwipeGestures();
+    handleWholeScreenSwipe();
 }, { passive: true });
 
-function handleSwipeGestures() {
+function handleWholeScreenSwipe() {
     const swipeDistanceX = touchEndX - touchStartX;
     const swipeDistanceY = touchEndY - touchStartY;
     
-    // Verify movement is clean horizontal shift rather than a vertical scrolling track
-    if (Math.abs(swipeDistanceX) > Math.abs(swipeDistanceY)) {
-        const minSwipeThreshold = 50; // trigger displacement line filter
+    // Ensure horizontal motion dominates over any vertical scrolls
+    if (Math.abs(swipeDistanceX) > Math.abs(swipeDistanceY) * 1.4) {
+        const minSwipeThreshold = 45; // Pixel distance limit requirement for firing action arrays
         
         if (sidebar.classList.contains("collapsed")) {
-            // OPEN SIDEBAR: Swipe Left-to-Right starting near the left boundary edge
-            if (swipeDistanceX > minSwipeThreshold && touchStartX < 60) {
+            // OPEN SIDEBAR: Sliding left-to-right from ANY point on screen surface area context
+            if (swipeDistanceX > minSwipeThreshold) {
                 openMobileSidebar();
             }
         } else {
-            // CLOSE SIDEBAR: Swipe Right-to-Left originating from anywhere within view
+            // CLOSE SIDEBAR: Sliding right-to-left from ANY location inside view scope
             if (swipeDistanceX < -minSwipeThreshold) {
                 closeMobileSidebar();
             }
