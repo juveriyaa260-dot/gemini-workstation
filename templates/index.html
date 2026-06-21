@@ -116,8 +116,6 @@ href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.
                     </div>
 
                     <div class="chips-container">
-                        <button class="chip" onclick="applyQuickImagePrompt()"><span
-                                class="material-symbols-outlined">palette</span> Generate Image</button>
                         <button class="chip" id="manual-canvas-btn"><span
                                 class="material-symbols-outlined">open_in_new</span> Send to Canvas</button>
 
@@ -148,7 +146,7 @@ href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.
                 </div>
             </div>
             <div class="artifact-frame-body-wrapper">
-                <iframe id="artifact-sandbox-iframe" sandbox="allow-scripts"></iframe>
+                <iframe id="artifact-sandbox-iframe" sandbox="allow-scripts allow-same-origin"></iframe>
             </div>
         </div>
     </div>
